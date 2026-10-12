@@ -1,7 +1,7 @@
 ---
 title: Pong in Godot 4
-description: Build the classic two-player Pong from an empty project, and learn scenes, nodes, input and collisions along the way.
+description: Build a complete Pong from an empty project, with physics, scoring, a CPU opponent, main and pause menus, an options screen with key rebinding and saved settings, sound, and an exported build.
 engine: Godot
 difficulty: beginner
-tags: [gdscript, 2d, physics]
+tags: [gdscript, 2d, physics, ui]
 ---
