@@ -1,0 +1,50 @@
+---
+import '../styles/global.css';
+import ThemeToggle from '../components/ThemeToggle.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Wide layouts (tutorial pages) manage their own columns. */
+  wide?: boolean;
+}
+
+const { title, description, wide = false } = Astro.props;
+const fullTitle = title === 'Tutter' ? title : `${title} · Tutter`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%235b8def'/><rect x='6' y='9' width='3' height='14' fill='white'/><rect x='23' y='9' width='3' height='14' fill='white'/><rect x='14' y='14' width='4' height='4' fill='white'/></svg>" />
+    <script is:inline>
+      (() => {
+        let theme;
+        try { theme = localStorage.getItem('tutter:theme'); } catch {}
+        if (theme !== 'light' && theme !== 'dark') {
+          theme = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.dataset.theme = theme;
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true"></span>Tutter
+      </a>
+      <nav class="site-nav">
+        <a href="/">Library</a>
+        <a href="/progress/">Progress</a>
+        <ThemeToggle />
+      </nav>
+    </header>
+    <main class:list={['site-main', { wide }]}>
+      <slot />
+    </main>
+  </body>
+</html>

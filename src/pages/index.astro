@@ -1,0 +1,63 @@
+---
+import { Image } from 'astro:assets';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import ProgressBar from '../components/ProgressBar.astro';
+import { getTutorials } from '../lib/content';
+
+const tutorials = await getTutorials();
+---
+
+<BaseLayout title="Tutter">
+  <section class="hero">
+    <h1>Library</h1>
+    <p class="muted">Tutorials from <code>tutorials/</code>. Pick up where you left off, or start something new.</p>
+    <a class="continue-card" id="continue" hidden>
+      <span class="eyebrow">Continue where you left off</span>
+      <span class="continue-title"></span>
+    </a>
+  </section>
+
+  {
+    tutorials.length === 0 ? (
+      <p class="empty">
+        No tutorials yet. Add a folder with a <code>tutorial.md</code> under <code>tutorials/</code>. The README explains the format.
+      </p>
+    ) : (
+      <ul class="card-grid">
+        {tutorials.map((t) => (
+          <li>
+            <a class="card" href={t.url}>
+              {t.data.cover && <Image src={t.data.cover as ImageMetadata} alt="" class="card-cover" widths={[400, 800]} sizes="(max-width: 700px) 100vw, 400px" />}
+              <div class="card-body">
+                <div class="badges">
+                  {t.data.engine && <span class="badge badge-engine">{t.data.engine}</span>}
+                  {t.data.difficulty && <span class={`badge badge-${t.data.difficulty}`}>{t.data.difficulty}</span>}
+                </div>
+                <h2>{t.data.title}</h2>
+                <p class="muted">{t.data.description}</p>
+                <p class="card-meta muted">
+                  {t.chapters.length} chapters · {t.pages.length} pages
+                </p>
+                <ProgressBar pageIds={t.pages.map((p) => p.id)} />
+              </div>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</BaseLayout>
+
+<script>
+  import { getProgress, onProgressChange } from '../lib/progress';
+
+  onProgressChange(() => {
+    const last = getProgress().get().lastVisited;
+    const card = document.querySelector<HTMLAnchorElement>('#continue')!;
+    card.hidden = !last;
+    if (last) {
+      card.href = last.url;
+      card.querySelector('.continue-title')!.textContent = last.title;
+    }
+  });
+</script>
