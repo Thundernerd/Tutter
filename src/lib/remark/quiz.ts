@@ -2,6 +2,7 @@
  * Turns ```quiz fenced blocks (YAML inside) into interactive quiz markup.
  * Hydrated on the client by `src/scripts/quiz.ts`.
  */
+import fs from 'node:fs';
 import path from 'node:path';
 import type { Code, Html, Root } from 'mdast';
 import type { VFile } from 'vfile';
@@ -121,6 +122,22 @@ export interface RemarkQuizOptions {
   tutorialsDir: string;
 }
 
+/**
+ * Astro renders only the markdown body, so node positions start after the
+ * frontmatter. Returns how many lines of the file on disk precede the body.
+ */
+function bodyLineOffset(file: VFile): number {
+  if (!file.path) return 0;
+  let source: string;
+  try {
+    source = fs.readFileSync(file.path, 'utf8');
+  } catch {
+    return 0;
+  }
+  const at = source.indexOf(String(file.value));
+  return at > 0 ? source.slice(0, at).split('\n').length - 1 : 0;
+}
+
 export function remarkQuiz({ tutorialsDir }: RemarkQuizOptions) {
   return (tree: Root, file: VFile) => {
     const rel = file.path ? path.relative(tutorialsDir, file.path) : '';
@@ -138,7 +155,7 @@ export function remarkQuiz({ tutorialsDir }: RemarkQuizOptions) {
       } catch (err) {
         if (!(err instanceof QuizError)) throw err;
         const where = file.path ? path.relative(process.cwd(), file.path) : 'markdown';
-        const line = node.position ? ` (line ${node.position.start.line})` : '';
+        const line = node.position ? ` (line ${node.position.start.line + bodyLineOffset(file)})` : '';
         file.fail(`Quiz #${n} in ${where}${line}: ${err.message}`, node);
       }
       if (seenIds.has(quiz.id)) file.fail(`Duplicate quiz id "${quiz.id}"`, node);

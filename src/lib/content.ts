@@ -11,11 +11,13 @@ async function load() {
   ]);
 
   // The glob loader only logs markdown errors (e.g. an invalid quiz) and keeps
-  // the entry without HTML, which would publish a silently empty page.
+  // the entry without HTML, which would publish a silently empty page. It only
+  // logs when it renders: an unchanged file reuses the cached failed entry.
   const broken = [...chapters, ...pages].filter((e) => !e.rendered).map((e) => e.filePath ?? e.id);
   if (broken.length > 0) {
     throw new CatalogError(
-      `Failed to render ${broken.join(', ')}. See the [glob-loader] error above for details.`,
+      `Failed to render ${broken.join(', ')}. See the [glob-loader] error above for details. ` +
+        'If there is none, the failure was cached by an earlier build: run `npx astro build --force` to see it.',
     );
   }
 
