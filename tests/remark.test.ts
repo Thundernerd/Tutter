@@ -76,6 +76,13 @@ describe('remarkQuiz', () => {
     );
   });
 
+  it('reports lines of the file, not of the body Astro renders after the frontmatter', async () => {
+    const file = path.join(pageDir, '03-frontmatter.md');
+    const body = 'Intro.\n\n```quiz\nquestion: Q\noptions: [a, b]\nanswer: 9\n```\n';
+    fs.writeFileSync(file, `---\ntitle: Page\ndescription: Something\n---\n\n${body}`);
+    await expect(render(body, file)).rejects.toThrow(/Quiz #1 in .*03-frontmatter\.md \(line 8\): answer must be/);
+  });
+
   it('rejects duplicate quiz ids', async () => {
     const block = '```quiz\nid: same\nquestion: Q\noptions: [a, b]\nanswer: 0\n```\n\n';
     await expect(render(block + block)).rejects.toThrow(/Duplicate quiz id "same"/);
