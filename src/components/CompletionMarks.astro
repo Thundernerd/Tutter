@@ -1,0 +1,14 @@
+---
+/** Shared script: toggles `.is-complete` on every `[data-page-id]` element. */
+---
+
+<script>
+  import { getProgress, onProgressChange } from '../lib/progress';
+
+  onProgressChange(() => {
+    const store = getProgress();
+    for (const el of document.querySelectorAll<HTMLElement>('[data-page-id]')) {
+      el.classList.toggle('is-complete', store.isComplete(el.dataset.pageId!));
+    }
+  });
+</script>

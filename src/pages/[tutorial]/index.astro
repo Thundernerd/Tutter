@@ -1,0 +1,85 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ProgressBar from '../../components/ProgressBar.astro';
+import CompletionMarks from '../../components/CompletionMarks.astro';
+import { getTutorials, type CatalogTutorial } from '../../lib/content';
+
+export async function getStaticPaths() {
+  const tutorials = await getTutorials();
+  return tutorials.map((tutorial) => ({ params: { tutorial: tutorial.slug }, props: { tutorial } }));
+}
+
+const { tutorial } = Astro.props as { tutorial: CatalogTutorial };
+const totalMinutes = tutorial.pages.reduce((sum, p) => sum + (p.data.estimatedMinutes ?? 0), 0);
+const firstPage = tutorial.pages[0];
+---
+
+<BaseLayout title={tutorial.data.title} description={tutorial.data.description}>
+  <nav class="breadcrumbs"><a href="/">Library</a></nav>
+  <header class="tutorial-header">
+    <div class="badges">
+      {tutorial.data.engine && <span class="badge badge-engine">{tutorial.data.engine}</span>}
+      {tutorial.data.difficulty && <span class={`badge badge-${tutorial.data.difficulty}`}>{tutorial.data.difficulty}</span>}
+      {tutorial.data.tags.map((tag) => <span class="badge">#{tag}</span>)}
+    </div>
+    <h1>{tutorial.data.title}</h1>
+    <p class="lede">{tutorial.data.description}</p>
+    <p class="muted">
+      {tutorial.chapters.length} chapters · {tutorial.pages.length} pages{totalMinutes > 0 && ` · about ${totalMinutes} min`}
+    </p>
+    <ProgressBar pageIds={tutorial.pages.map((p) => p.id)} />
+    {firstPage && (
+      <a class="btn btn-primary" id="start" href={firstPage.url} data-page-ids={JSON.stringify(tutorial.pages.map((p) => ({ id: p.id, url: p.url })))}>
+        Start tutorial
+      </a>
+    )}
+  </header>
+
+  <ol class="chapter-list">
+    {tutorial.chapters.map((chapter, i) => (
+      <li class="chapter-item">
+        <h2>
+          <span class="chapter-number">{i + 1}</span>
+          <a href={chapter.url}>{chapter.title}</a>
+        </h2>
+        {chapter.data.summary && <p class="muted">{chapter.data.summary}</p>}
+        <ol class="page-list">
+          {chapter.pages.map((page) => (
+            <li data-page-id={page.id}>
+              <a href={page.url}>
+                <span class="check" aria-hidden="true" />
+                <span>{page.title}</span>
+                {page.data.estimatedMinutes && <span class="muted minutes">{page.data.estimatedMinutes} min</span>}
+              </a>
+            </li>
+          ))}
+        </ol>
+      </li>
+    ))}
+  </ol>
+  <CompletionMarks />
+</BaseLayout>
+
+<script>
+  import { getProgress, onProgressChange } from '../../lib/progress';
+
+  // "Start" becomes "Continue" and jumps to the first unfinished page.
+  onProgressChange(() => {
+    const button = document.querySelector<HTMLAnchorElement>('#start');
+    if (!button) return;
+    const store = getProgress();
+    const pages = JSON.parse(button.dataset.pageIds ?? '[]') as { id: string; url: string }[];
+    const done = pages.filter((p) => store.isComplete(p.id)).length;
+    const next = pages.find((p) => !store.isComplete(p.id));
+    if (done === 0) {
+      button.textContent = 'Start tutorial';
+      button.href = pages[0]!.url;
+    } else if (next) {
+      button.textContent = 'Continue';
+      button.href = next.url;
+    } else {
+      button.textContent = 'Review from the start';
+      button.href = pages[0]!.url;
+    }
+  });
+</script>

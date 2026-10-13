@@ -1,0 +1,42 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import CompletionMarks from '../../../components/CompletionMarks.astro';
+import { getTutorials, type CatalogTutorial } from '../../../lib/content';
+
+export async function getStaticPaths() {
+  const tutorials = await getTutorials();
+  return tutorials.flatMap((tutorial) =>
+    tutorial.chapters.map((chapter, index) => ({
+      params: { tutorial: tutorial.slug, chapter: chapter.slug },
+      props: { tutorial, index },
+    })),
+  );
+}
+
+const { tutorial, index } = Astro.props as { tutorial: CatalogTutorial; index: number };
+const chapter = tutorial.chapters[index]!;
+const { Content } = chapter.entry ? await render(chapter.entry) : { Content: null };
+---
+
+<BaseLayout title={`${chapter.title} · ${tutorial.data.title}`}>
+  <nav class="breadcrumbs"><a href="/">Library</a> / <a href={tutorial.url}>{tutorial.data.title}</a></nav>
+  <header class="tutorial-header">
+    <p class="eyebrow">Chapter {index + 1}</p>
+    <h1>{chapter.title}</h1>
+    {chapter.data.summary && <p class="lede">{chapter.data.summary}</p>}
+  </header>
+  {Content && <div class="prose"><Content /></div>}
+  <ol class="page-list page-list-large">
+    {chapter.pages.map((page) => (
+      <li data-page-id={page.id}>
+        <a href={page.url}>
+          <span class="check" aria-hidden="true" />
+          <span>{page.title}</span>
+          {page.data.estimatedMinutes && <span class="muted minutes">{page.data.estimatedMinutes} min</span>}
+        </a>
+      </li>
+    ))}
+  </ol>
+  <CompletionMarks />
+</BaseLayout>

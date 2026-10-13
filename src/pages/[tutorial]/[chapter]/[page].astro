@@ -1,0 +1,133 @@
+---
+import { render } from 'astro:content';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ProgressBar from '../../../components/ProgressBar.astro';
+import CompletionMarks from '../../../components/CompletionMarks.astro';
+import { getTutorials, type CatalogPageNav } from '../../../lib/content';
+import { findPageNav } from '../../../lib/catalog';
+
+export async function getStaticPaths() {
+  const tutorials = await getTutorials();
+  return tutorials.flatMap((tutorial) =>
+    tutorial.pages.map((page) => {
+      const [, chapter, slug] = page.id.split('/');
+      return {
+        params: { tutorial: tutorial.slug, chapter, page: slug },
+        props: { nav: findPageNav(tutorials, page.id)! },
+      };
+    }),
+  );
+}
+
+const { nav } = Astro.props as { nav: CatalogPageNav };
+const { tutorial, chapter, page, prev, next } = nav;
+const { Content, headings } = await render(page.entry);
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const chapterIndex = tutorial.chapters.indexOf(chapter);
+---
+
+<BaseLayout title={`${page.title} · ${tutorial.data.title}`} description={page.data.description} wide>
+  <div class="page-layout" data-current-page={page.id} data-current-title={`${tutorial.data.title}: ${page.title}`}>
+    <aside class="sidebar" id="sidebar">
+      <button class="sidebar-toggle" type="button" aria-expanded="false" aria-controls="sidebar-nav">
+        <span>Contents</span><span class="muted">{chapter.title}</span>
+      </button>
+      <nav class="sidebar-nav" id="sidebar-nav">
+        <a class="sidebar-title" href={tutorial.url}>{tutorial.data.title}</a>
+        <ProgressBar pageIds={tutorial.pages.map((p) => p.id)} />
+        <ol class="sidebar-chapters">
+          {tutorial.chapters.map((c, i) => (
+            <li>
+              <a class="sidebar-chapter" href={c.url}>
+                <span class="chapter-number">{i + 1}</span>{c.title}
+              </a>
+              <ol class="sidebar-pages">
+                {c.pages.map((p) => (
+                  <li data-page-id={p.id}>
+                    <a href={p.url} aria-current={p.id === page.id ? 'page' : undefined}>
+                      <span class="check" aria-hidden="true" />
+                      {p.title}
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </li>
+          ))}
+        </ol>
+      </nav>
+    </aside>
+
+    <article class="page-content">
+      <nav class="breadcrumbs">
+        <a href={tutorial.url}>{tutorial.data.title}</a> / <a href={chapter.url}>Chapter {chapterIndex + 1}: {chapter.title}</a>
+      </nav>
+      <header class="page-header">
+        <h1>{page.title}</h1>
+        {page.data.description && <p class="lede">{page.data.description}</p>}
+        {page.data.estimatedMinutes && <p class="muted">About {page.data.estimatedMinutes} min</p>}
+      </header>
+
+      <div class="prose">
+        <Content />
+      </div>
+
+      <footer class="page-footer">
+        <div class="complete-row" data-page-id={page.id}>
+          <button type="button" class="btn complete-toggle" data-mark-complete>
+            <span class="when-incomplete">Mark as complete</span>
+            <span class="when-complete">✓ Completed</span>
+          </button>
+          {next ? (
+            <a class="btn btn-primary" href={next.url} data-complete-and-go>Complete &amp; next →</a>
+          ) : (
+            <a class="btn btn-primary" href={tutorial.url} data-complete-and-go>Finish tutorial ✓</a>
+          )}
+        </div>
+        <nav class="pager">
+          {prev ? (
+            <a class="pager-link" href={prev.url}><span class="muted">← Previous</span><span>{prev.title}</span></a>
+          ) : <span />}
+          {next && (
+            <a class="pager-link pager-next" href={next.url}><span class="muted">Next →</span><span>{next.title}</span></a>
+          )}
+        </nav>
+      </footer>
+    </article>
+
+    {toc.length > 0 && (
+      <aside class="toc">
+        <p class="toc-title">On this page</p>
+        <ul>
+          {toc.map((h) => (
+            <li class={`toc-depth-${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>
+          ))}
+        </ul>
+      </aside>
+    )}
+  </div>
+  <CompletionMarks />
+</BaseLayout>
+
+<script>
+  import { getProgress } from '../../../lib/progress';
+  import '../../../scripts/quiz';
+
+  const store = getProgress();
+  const layout = document.querySelector<HTMLElement>('.page-layout')!;
+  const pageId = layout.dataset.currentPage!;
+
+  store.setLastVisited({ pageId, url: location.pathname, title: layout.dataset.currentTitle! });
+
+  document.querySelector('[data-mark-complete]')?.addEventListener('click', () => {
+    if (store.isComplete(pageId)) store.markIncomplete(pageId);
+    else store.markComplete(pageId);
+  });
+  document.querySelector('[data-complete-and-go]')?.addEventListener('click', () => store.markComplete(pageId));
+
+  const toggle = document.querySelector<HTMLButtonElement>('.sidebar-toggle')!;
+  toggle.addEventListener('click', () => {
+    const open = toggle.getAttribute('aria-expanded') !== 'true';
+    toggle.setAttribute('aria-expanded', String(open));
+    document.querySelector('#sidebar')!.classList.toggle('is-open', open);
+  });
+</script>

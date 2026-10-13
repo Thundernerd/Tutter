@@ -1,0 +1,29 @@
+---
+/** Filled client-side from the progress store; `pageIds` drive the count. */
+interface Props {
+  pageIds: string[];
+  label?: boolean;
+}
+const { pageIds, label = true } = Astro.props;
+---
+
+<div class="progress" data-progress-for={JSON.stringify(pageIds)}>
+  <div class="progress-track"><div class="progress-fill" style="width: 0%"></div></div>
+  {label && <span class="progress-label">0 / {pageIds.length}</span>}
+</div>
+
+<script>
+  import { getProgress, onProgressChange } from '../lib/progress';
+
+  onProgressChange(() => {
+    const store = getProgress();
+    for (const el of document.querySelectorAll<HTMLElement>('[data-progress-for]')) {
+      const ids = JSON.parse(el.dataset.progressFor ?? '[]') as string[];
+      const { completed, total, percent } = store.stats(ids);
+      el.querySelector<HTMLElement>('.progress-fill')!.style.width = `${percent}%`;
+      const label = el.querySelector('.progress-label');
+      if (label) label.textContent = `${completed} / ${total}`;
+      el.classList.toggle('is-done', total > 0 && completed === total);
+    }
+  });
+</script>
