@@ -19,6 +19,9 @@ export default defineConfig({
       useDarkModeMediaQuery: false,
       themeCssSelector: (theme) => `[data-theme='${theme.type}']`,
       styleOverrides: { borderRadius: '0.5rem', codeFontSize: '0.875rem' },
+      // Keep tabs: the default (2) turns them into spaces, also in the copy button,
+      // and space-indented lines pasted into a tab-indented GDScript file don't parse.
+      tabWidth: 0,
     }),
     tutorialFiles({ tutorialsDir }),
   ],
