@@ -99,6 +99,11 @@ kbd {
   font-family: var(--font-mono);
   font-size: 0.875em;
 }
+/* Code keeps its tabs (see tabWidth in astro.config.mjs); show them 4 wide.
+   Specific enough to beat Expressive Code's `all: revert` reset. */
+.expressive-code .frame pre {
+  tab-size: 4;
+}
 :not(pre) > code {
   background: var(--surface-2);
   border: 1px solid var(--border);
