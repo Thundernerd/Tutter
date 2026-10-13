@@ -1,0 +1,54 @@
+---
+title: Creating the project
+description: Renderer, window size, stretch mode and an empty game scene.
+estimatedMinutes: 10
+---
+
+## Create the project
+
+In the project manager, click **Create** and name the project `Blockfall`. Pick the **Compatibility** renderer: a 2D puzzle game doesn't need anything fancier, and Compatibility also runs in web browsers, which matters when we export at the end.
+
+## Set the window size
+
+Open **Project → Project Settings → Display → Window**. Turn on **Advanced Settings** (top right) to see every option, then set:
+
+| Setting | Value | Why |
+| --- | --- | --- |
+| Viewport Width / Height | `640` × `360` | The game's logical resolution; all positions in this tutorial use it. |
+| Window Width / Height Override | `1280` × `720` | Opens a bigger window on desktop. |
+| Stretch → Mode | `canvas_items` | Scales the 640×360 game to fit the window. |
+
+640×360 is a 16:9 resolution that scales up to 1280×720, 1920×1080 and 4K by whole numbers, so our blocks will always stay crisp. Godot stores these values in `project.godot`, a plain text file you can read:
+
+```ini title="project.godot" {2-3,6}
+[display]
+window/size/viewport_width=640
+window/size/viewport_height=360
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+```
+
+:::warning[Stretch mode]
+Without `canvas_items`, resizing the window or going fullscreen shows the game tiny in a corner. We add a fullscreen option later, so set it now.
+:::
+
+While you're in Project Settings, open **Rendering → Environment** and set **Default Clear Color** to a dark purple-grey (`#1e1b2e`). That's the background behind everything.
+
+## The game scene
+
+Click **Other Node** in the Scene dock, pick `Node2D`, rename it to `Game` and save it as `game.tscn`. Press <kbd>F5</kbd> and choose **Select Current** when Godot asks for a main scene. You should get an empty window in that dark colour.
+
+```quiz
+question: Which of these does `project.godot` store? Select all that apply.
+type: multiple
+options:
+  - The viewport size
+  - The main scene
+  - Where each node in game.tscn is
+  - The project name
+answer: [0, 1, 3]
+explain: Node positions live in the scene files (`.tscn`), not in the project settings.
+```
+
+Next up: [naming the controls](./03-input-actions.md).
